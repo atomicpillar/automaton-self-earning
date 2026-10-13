@@ -12,6 +12,9 @@
  *   leads mark <id> <status> [--note TEXT]
  *   leads cost <id> <dollars> [--note TEXT]
  *   leads report [--cost-to-serve DOLLARS]
+ *   leads collect [--target N] [--max-requests N] [--sources royallepage,c21,remax]
+ *                 [--urls file.txt] [--check-sites] [--exclude-brokerage REGEX]
+ *                 [--out file.csv] [--add]
  */
 
 import chalk from "chalk";
@@ -23,6 +26,10 @@ import { LeadLedger } from "@conway/automaton/leads/ledger.js";
 import { draftEmail, draftSms, type SenderConfig } from "@conway/automaton/leads/drafts.js";
 import { buildFunnelReport } from "@conway/automaton/leads/funnel.js";
 import { scoreLead } from "@conway/automaton/leads/scoring.js";
+import { collect, leadsToCsv } from "@conway/automaton/leads/collector/collect.js";
+import { PoliteFetcher } from "@conway/automaton/leads/collector/fetcher.js";
+import { ALL_SOURCES, type SourceName } from "@conway/automaton/leads/collector/discovery.js";
+import os from "os";
 import {
   CONSENT_BASES,
   LEAD_STATUSES,
@@ -297,6 +304,61 @@ switch (sub) {
     break;
   }
 
+  case "collect": {
+    const sources = (flags.get("sources") ?? ALL_SOURCES.join(","))
+      .split(",")
+      .map((x) => x.trim())
+      .filter(Boolean) as SourceName[];
+    for (const sName of sources) {
+      if (!ALL_SOURCES.includes(sName)) fail(`Unknown source ${sName}. Use: ${ALL_SOURCES.join(", ")}`);
+    }
+    const seedFile = flags.get("urls");
+    const seedUrls = seedFile
+      ? fs.readFileSync(seedFile, "utf-8").split(/\r?\n/).map((l) => l.trim()).filter((l) => l.startsWith("https://"))
+      : [];
+    const fetcher = new PoliteFetcher({
+      cacheDir: path.join(os.homedir(), ".automaton", "leads-cache"),
+      delayMs: Number(flags.get("delay-ms") ?? 2000),
+      maxRequests: Number(flags.get("max-requests") ?? 250),
+    });
+    const { leads, stats } = await collect({
+      fetcher,
+      sources,
+      seedUrls,
+      target: Number(flags.get("target") ?? 40),
+      checkSites: flags.has("check-sites"),
+      excludeBrokerage: flags.has("exclude-brokerage") ? new RegExp(flags.get("exclude-brokerage")!, "i") : undefined,
+      log: (m) => console.log(chalk.dim(m)),
+    });
+    const out = flags.get("out") ?? `leads-collected-${new Date().toISOString().slice(0, 10)}.csv`;
+    fs.writeFileSync(out, leadsToCsv(leads));
+    console.log(`\nCollected ${chalk.green(leads.length)} leads -> ${out}`);
+    console.log(`Pages fetched ${stats.pagesFetched}, parsed ${stats.parsed}, not GTA ${stats.notGta}, no contact ${stats.noContact}, excluded ${stats.excluded}`);
+    console.log(`By network: ${JSON.stringify(stats.byNetwork)}  Requests used: ${stats.requestsUsed}`);
+    if (Object.keys(stats.failures).length) console.log(`Skipped: ${JSON.stringify(stats.failures)}`);
+    if (flags.has("add")) {
+      let added = 0;
+      for (const { agent, signals } of leads) {
+        try {
+          const r = ledger.addLead({
+            name: agent.name, email: agent.email ?? undefined, phone: agent.mobile ?? undefined,
+            brokerage: agent.brokerage ?? undefined, city: agent.city ?? undefined,
+            website: agent.website ?? undefined, source: agent.sourceUrl,
+            consentBasis: "conspicuous_publication", signals,
+            notes: [`network: ${agent.network}`, ...agent.notes].join("; "),
+          });
+          if (r.created) added++;
+        } catch (err) {
+          console.error(chalk.red(`${agent.name}: ${(err as Error).message}`));
+        }
+      }
+      console.log(`Added ${chalk.green(added)} new leads to the ledger`);
+    } else {
+      console.log(chalk.dim(`Review the CSV, then: leads import ${out}`));
+    }
+    break;
+  }
+
   default:
     console.log(`
 Usage: automaton-cli leads <subcommand>
@@ -309,6 +371,8 @@ Usage: automaton-cli leads <subcommand>
   mark <id> <status> [--note TEXT]
   cost <id> <dollars> [--note TEXT]
   report [--cost-to-serve DOLLARS]
+  collect [--target N] [--max-requests N] [--sources royallepage,c21,remax] [--urls file.txt]
+          [--check-sites] [--exclude-brokerage REGEX] [--out file.csv] [--add]
 
 Consent bases: ${CONSENT_BASES.join(", ")}
 Statuses:      ${LEAD_STATUSES.join(", ")}

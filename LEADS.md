@@ -11,6 +11,21 @@ Tracks prospects for the Atomic Pillar realtor SaaS ($59/mo, 14-day trial) from 
 5. **Update** with `leads mark <id> replied|trial|paid|lost|do_not_contact`. Honour opt-outs immediately with `do_not_contact`.
 6. **Measure** with `leads report --cost-to-serve <dollars>`. Rates are not meaningful until about 100 leads are contacted.
 
+## Collector
+
+`leads collect` finds agents who have published their own contact details on public profile pages: Royal LePage, Century 21 Canada and RE/MAX, via each network's published sitemaps. Use `--urls file.txt` to add other pages, such as independents' own sites.
+
+- It identifies itself, obeys robots.txt (and refuses a URL if robots.txt can't be read), waits 2s between requests, caches pages, refuses cross-host redirects and stops at `--max-requests`. It does not touch realtor.ca (blocked) or any private API.
+- A phone number is kept only if the page labels it "Mobile" or "Cell". Office, main and toll-free lines are dropped so a text never goes to a switchboard.
+- Only GTA agents with an email or mobile are kept. `--check-sites` also looks at each agent's own site for a chat widget or booking link.
+- Brokerage is recorded on every lead; use `--exclude-brokerage REGEX` to drop a brand.
+- What it cannot see: whether an agent is solo, active, or already has a receptionist. Those signals stay unset, so collected leads score 40 at most. Review the list before sending.
+
+```
+automaton-cli leads collect --target 40 --check-sites --out leads.csv
+automaton-cli leads import leads.csv     # or add --add to insert directly
+```
+
 ## Commands
 
 ```

@@ -37,6 +37,26 @@
     "./leads/types.js": {
       "types": "./dist/leads/types.d.ts",
       "default": "./dist/leads/types.js"
+    },
+    "./leads/collector/collect.js": {
+      "types": "./dist/leads/collector/collect.d.ts",
+      "default": "./dist/leads/collector/collect.js"
+    },
+    "./leads/collector/fetcher.js": {
+      "types": "./dist/leads/collector/fetcher.d.ts",
+      "default": "./dist/leads/collector/fetcher.js"
+    },
+    "./leads/collector/discovery.js": {
+      "types": "./dist/leads/collector/discovery.d.ts",
+      "default": "./dist/leads/collector/discovery.js"
+    },
+    "./leads/collector/parsers.js": {
+      "types": "./dist/leads/collector/parsers.d.ts",
+      "default": "./dist/leads/collector/parsers.js"
+    },
+    "./leads/collector/robots.js": {
+      "types": "./dist/leads/collector/robots.d.ts",
+      "default": "./dist/leads/collector/robots.js"
     }
   },
   "bin": {
