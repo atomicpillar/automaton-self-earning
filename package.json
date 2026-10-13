@@ -17,6 +17,26 @@
     "./state/database.js": {
       "types": "./dist/state/database.d.ts",
       "default": "./dist/state/database.js"
+    },
+    "./leads/ledger.js": {
+      "types": "./dist/leads/ledger.d.ts",
+      "default": "./dist/leads/ledger.js"
+    },
+    "./leads/scoring.js": {
+      "types": "./dist/leads/scoring.d.ts",
+      "default": "./dist/leads/scoring.js"
+    },
+    "./leads/drafts.js": {
+      "types": "./dist/leads/drafts.d.ts",
+      "default": "./dist/leads/drafts.js"
+    },
+    "./leads/funnel.js": {
+      "types": "./dist/leads/funnel.d.ts",
+      "default": "./dist/leads/funnel.js"
+    },
+    "./leads/types.js": {
+      "types": "./dist/leads/types.d.ts",
+      "default": "./dist/leads/types.js"
     }
   },
   "bin": {

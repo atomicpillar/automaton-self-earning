@@ -51,6 +51,9 @@ declare module "@conway/automaton/state/database.js" {
     getInstalledTools(): CliInstalledTool[];
     getHeartbeatEntries(): CliHeartbeatEntry[];
     getRecentTurns(limit: number): CliTurn[];
+    /** Underlying better-sqlite3 handle (typed loosely; the CLI has no direct dependency). */
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    raw: any;
     close(): void;
   }
 

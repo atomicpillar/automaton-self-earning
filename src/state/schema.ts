@@ -5,7 +5,7 @@
  * The database IS the automaton's memory.
  */
 
-export const SCHEMA_VERSION = 11;
+export const SCHEMA_VERSION = 12;
 
 export const CREATE_TABLES = `
   -- Schema version tracking
@@ -678,4 +678,50 @@ export const MIGRATION_V10 = `
 
   CREATE INDEX idx_knowledge_category ON knowledge_store(category);
   CREATE INDEX idx_knowledge_key ON knowledge_store(key);
+`;
+
+// === Lead Ledger (Atomic Pillar realtor SaaS outreach) ===
+
+export const MIGRATION_V12 = `
+  -- Schema version: 12
+  -- Tables: leads, lead_events
+
+  CREATE TABLE IF NOT EXISTS leads (
+    id TEXT PRIMARY KEY,                    -- ULID
+    name TEXT NOT NULL,
+    brokerage TEXT,
+    city TEXT,
+    phone TEXT,
+    email TEXT,
+    website TEXT,
+    source TEXT NOT NULL,                   -- where the contact was found (URL or description)
+    consent_basis TEXT NOT NULL,            -- CASL basis, e.g. 'conspicuous_publication'
+    signals TEXT NOT NULL DEFAULT '{}',     -- JSON of observed fit signals
+    fit_score INTEGER NOT NULL DEFAULT 0,   -- 0-100
+    status TEXT NOT NULL DEFAULT 'found',   -- found|contacted|replied|trial|paid|lost|do_not_contact
+    notes TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_leads_email ON leads(email) WHERE email IS NOT NULL;
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_leads_phone ON leads(phone) WHERE phone IS NOT NULL;
+  CREATE INDEX IF NOT EXISTS idx_leads_status ON leads(status);
+  CREATE INDEX IF NOT EXISTS idx_leads_fit ON leads(fit_score);
+
+  CREATE TABLE IF NOT EXISTS lead_events (
+    id TEXT PRIMARY KEY,                    -- ULID
+    lead_id TEXT NOT NULL REFERENCES leads(id),
+    kind TEXT NOT NULL,                     -- status_change|message_drafted|message_sent|note|cost
+    channel TEXT,                           -- email|sms|call|other
+    from_status TEXT,
+    to_status TEXT,
+    cost_cents INTEGER NOT NULL DEFAULT 0,
+    revenue_cents INTEGER NOT NULL DEFAULT 0,
+    detail TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_lead_events_lead ON lead_events(lead_id);
+  CREATE INDEX IF NOT EXISTS idx_lead_events_kind ON lead_events(kind);
 `;

@@ -23,6 +23,9 @@ async function main(): Promise<void> {
     case "send":
       await import("./commands/send.js");
       break;
+    case "leads":
+      await import("./commands/leads.js");
+      break;
     default:
       console.log(`
 Conway Automaton CLI - Creator Tools
@@ -32,6 +35,7 @@ Usage:
   automaton-cli logs [--tail N]     View automaton logs
   automaton-cli fund <amount> [--to 0x...]  Transfer Conway credits
   automaton-cli send <to-address> <message> Send a social message
+  automaton-cli leads <subcommand>  Realtor lead ledger (add, import, list, draft, report)
 `);
   }
 }
